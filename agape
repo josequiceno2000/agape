@@ -2,8 +2,11 @@
 import sys
 import os
 
+real_path = os.path.realpath(__file__)
+project_root = os.path.dirname(real_path)
+
 # Add the src directory to the system path
-sys.path.append(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(project_root, 'src'))
 
 from logic import main
 
