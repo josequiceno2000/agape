@@ -31,8 +31,17 @@ def list_tasks():
         return
     print("\n--- YOUR TASKS ---")
     for index, task in enumerate(tasks, start=1):
-        status = "✓" if task["completed"] else "✗"
+        status = "✓" if task["completed"] else ""
         print(f"{index}. [{status}] {task['text']}")
+
+def update_task(index: int, message: str):
+    tasks = load_tasks()
+    try:
+        tasks[index - 1]["text"] = message
+        save_tasks(tasks)
+        print(f"Task #{index} updated to: {message}")
+    except IndexError:
+        print(f"Error: Task #{index} does not exist.")
 
 def delete_task(index: int):
     tasks = load_tasks()
@@ -54,6 +63,11 @@ def main(argv=None):
     # List command
     subparsers.add_parser("list", help="List all tasks")
 
+    # Update command
+    update_parser = subparsers.add_parser("update", help="Update task text by its index")
+    update_parser.add_argument("index", type=int, help="The index of the task to update")
+    update_parser.add_argument("message", type=str, help="The new text for the task")
+
     # Delete command
     delete_parser = subparsers.add_parser("delete", help="Delete a task by its index")
     delete_parser.add_argument("index", type=int, help="The index of the task to delete")
@@ -64,6 +78,8 @@ def main(argv=None):
         add_task(args.text)
     elif args.command == "list":
         list_tasks()
+    elif args.command == "update":
+        update_task(args.index, args.message)
     elif args.command == "delete":
         delete_task(args.index)
     
