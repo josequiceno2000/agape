@@ -1,6 +1,16 @@
 [
     {
-        "text": "Learn JavaScript",
-        "completed": false
+        "id": 2,
+        "description": "Make breakfast",
+        "status": "todo",
+        "createdAt": "2025-12-29T21:20:07.000786",
+        "updatedAt": null
+    },
+    {
+        "id": 3,
+        "description": "Clean bedroom",
+        "status": "todo",
+        "createdAt": "2025-12-29 21:20:37",
+        "updatedAt": null
     }
 ]

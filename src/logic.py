@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import datetime
 
 DB_FILE = "tasks.json"
 
@@ -18,11 +19,20 @@ def save_tasks(tasks):
 
 # Command implementations
 
-def add_task(text: str):
+def add_task(description: str):
     tasks = load_tasks()
-    tasks.append({"text": text, "completed": False})
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    tasks.append({
+        "id": len(tasks) + 1,
+        "description": description, 
+        "status": "todo",
+        "createdAt": timestamp,
+        "updatedAt": None,
+        })
     save_tasks(tasks)
-    print(f"Task added: {text}")
+    print(f"Task added: {description} (at {timestamp})")
 
 def list_tasks():
     tasks = load_tasks()
@@ -31,13 +41,13 @@ def list_tasks():
         return
     print("\n--- YOUR TASKS ---")
     for index, task in enumerate(tasks, start=1):
-        status = "✓" if task["completed"] else ""
-        print(f"{index}. [{status}] {task['text']}")
+        status = "✓" if task["status"] == "done" else ""
+        print(f"{index}. [{status}] {task['description']}")
 
 def update_task(index: int, message: str):
     tasks = load_tasks()
     try:
-        tasks[index - 1]["text"] = message
+        tasks[index - 1]["description"] = message
         save_tasks(tasks)
         print(f"Task #{index} updated to: {message}")
     except IndexError:
@@ -48,7 +58,7 @@ def delete_task(index: int):
     try:
         removed = tasks.pop(index - 1)
         save_tasks(tasks)
-        print(f"Task deleted: {removed['text']}")
+        print(f"Task deleted: {removed['description']}")
     except IndexError:
         print(f"Error: Task #{index} does not exist.")
     
