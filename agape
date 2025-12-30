@@ -1,22 +1,11 @@
 #!/usr/bin/env python3
-import argparse
 import sys
+import os
 
-def generate_message(name, formal=False):
-    """Core logic, separated to be unit-testable."""
-    greeting = "Greetings" if formal else "Hello"
-    return f"{greeting}, {name}!"
+# Add the src directory to the system path
+sys.path.append(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description="Agape CLI Tool")
-    parser.add_argument("name", nargs="?", default="World", help="Name to greet")
-    parser.add_argument("--formal", action="store_true", help="Use a formal greeting")
-
-    args = parser.parse_args(argv)
-
-    message = generate_message(args.name, args.formal)
-    print(message)
-    return 0
+from logic import main
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
