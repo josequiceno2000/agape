@@ -57,7 +57,7 @@ def list_tasks(filter_status=None):
 
     for task in tasks:
         if task["status"] == "todo":
-            status = " "
+            status = ""
         elif task["status"] == "in-progress":
             status = "○"
         elif task["status"] == "done":
