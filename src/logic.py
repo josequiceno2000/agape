@@ -41,12 +41,20 @@ def add_task(description: str):
     save_tasks(tasks)
     print(f"Task added: {description} (at {timestamp})")
 
-def list_tasks():
+def list_tasks(filter_status=None):
     tasks = load_tasks()
+
+    if filter_status:
+        tasks = [t for t in tasks if t.get("status") == filter_status]
+
     if not tasks:
-        print("Your list is empty.")
+        msg = f"No tasks found with status '{filter_status}'." if filter_status else "Your list is empty."
+        print(msg)
         return
-    print("\n--- YOUR TASKS ---")
+
+    header = f"--- {filter_status.upper()} TASKS ---" if filter_status else "--- TASKS ---"
+    print(header)
+
     for task in tasks:
         if task["status"] == "todo":
             status = " "
@@ -123,7 +131,12 @@ def main(argv=None):
     add_parser.add_argument("text", type=str, help="The text of the task to add")
 
     # List command
-    subparsers.add_parser("list", help="List all tasks")
+    list_parser = subparsers.add_parser("list", help="List tasks")
+
+    group = list_parser.add_mutually_exclusive_group()
+    group.add_argument("-d", "--done", action="store_true", help="Show only completed tasks")
+    group.add_argument("-p", "--progress", action="store_true", help="Show only in-progress tasks")
+    group.add_argument("-t", "--todo", action="store_true", help="Show only todo tasks")
 
     # Update command
     update_parser = subparsers.add_parser("update", help="Update task text by its index")
@@ -148,7 +161,14 @@ def main(argv=None):
     if args.command == "add":
         add_task(args.text)
     elif args.command == "list":
-        list_tasks()
+        filter_status = None
+        if args.done:
+            filter_status = "done"
+        elif args.progress:
+            filter_status = "in-progress"
+        elif args.todo:
+            filter_status = "todo"
+        list_tasks(filter_status)
     elif args.command == "update":
         update_task(args.index, args.message)
     elif args.command == "delete":
