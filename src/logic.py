@@ -48,6 +48,7 @@ def update_task(index: int, message: str):
     tasks = load_tasks()
     try:
         tasks[index - 1]["description"] = message
+        tasks[index - 1]["updatedAt"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         save_tasks(tasks)
         print(f"Task #{index} updated to: {message}")
     except IndexError:
