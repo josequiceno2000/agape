@@ -17,6 +17,12 @@ def save_tasks(tasks):
     with open(DB_FILE, "w") as file:
         json.dump(tasks, file, indent=4)
 
+def reindex_tasks(tasks):
+    """Re-assigns IDS to tasks based on their position in the list."""
+    for index, task in enumerate(tasks, start=1):
+        task["id"] = index
+    return tasks
+
 # Command implementations
 
 def add_task(description: str):
@@ -30,7 +36,8 @@ def add_task(description: str):
         "status": "todo",
         "createdAt": timestamp,
         "updatedAt": None,
-        })
+    })
+
     save_tasks(tasks)
     print(f"Task added: {description} (at {timestamp})")
 
@@ -40,9 +47,11 @@ def list_tasks():
         print("Your list is empty.")
         return
     print("\n--- YOUR TASKS ---")
-    for index, task in enumerate(tasks, start=1):
-        status = "✓" if task["status"] == "done" else ""
-        print(f"{index}. [{status}] {task['description']}")
+    for task in tasks:
+        status = "✓" if task.get("status") == "done" else ""
+        description = task.get("description", "N/A")
+
+        print(f"{task['id']}. [{status}] {description}")
 
 def update_task(index: int, message: str):
     tasks = load_tasks()
@@ -54,14 +63,23 @@ def update_task(index: int, message: str):
     except IndexError:
         print(f"Error: Task #{index} does not exist.")
 
-def delete_task(index: int):
+def delete_task(task_id: int):
     tasks = load_tasks()
-    try:
-        removed = tasks.pop(index - 1)
-        save_tasks(tasks)
-        print(f"Task deleted: {removed['description']}")
-    except IndexError:
-        print(f"Error: Task #{index} does not exist.")
+
+    task_text = tasks[task_id - 1]["description"] if 0 < task_id <= len(tasks) else None
+    if task_text is None:
+        print(f"Error: Task with ID {task_id} not found.")
+        return
+
+    new_tasks = [t for t in tasks if t.get("id") != task_id]
+
+    if len(tasks) == len(new_tasks):
+        print(f"Error: Task with ID {task_id} not found.")
+        return
+
+    reindexed_tasks = reindex_tasks(new_tasks)
+    save_tasks(reindexed_tasks)
+    print(f"Task deleted: {task_text}")
     
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Agape CLI Tool")
