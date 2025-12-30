@@ -2,8 +2,22 @@
     {
         "id": 1,
         "description": "Brush teeth",
-        "status": "todo",
+        "status": "in-progress",
         "createdAt": "2025-12-29 21:36:36",
+        "updatedAt": "2025-12-29 22:11:05"
+    },
+    {
+        "id": 2,
+        "description": "Eat dinner",
+        "status": "todo",
+        "createdAt": "2025-12-29 22:11:44",
         "updatedAt": null
+    },
+    {
+        "id": 3,
+        "description": "Make bed",
+        "status": "done",
+        "createdAt": "2025-12-29 22:11:51",
+        "updatedAt": "2025-12-29 22:12:02"
     }
 ]

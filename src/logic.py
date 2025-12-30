@@ -48,7 +48,12 @@ def list_tasks():
         return
     print("\n--- YOUR TASKS ---")
     for task in tasks:
-        status = "✓" if task.get("status") == "done" else ""
+        if task["status"] == "todo":
+            status = " "
+        elif task["status"] == "in-progress":
+            status = "○"
+        elif task["status"] == "done":
+            status = "✓"
         description = task.get("description", "N/A")
 
         print(f"{task['id']}. [{status}] {description}")
@@ -62,6 +67,34 @@ def update_task(index: int, message: str):
         print(f"Task #{index} updated to: {message}")
     except IndexError:
         print(f"Error: Task #{index} does not exist.")
+
+def mark_task(task_id: int, new_status: str):
+    tasks = load_tasks()
+    status_map = {
+        "todo": "todo",
+        "progress": "in-progress",
+        "done": "done"
+    }
+
+    target_status = status_map.get(new_status.lower())
+    if not target_status:
+        print(f"Error: Invalid status '{new_status}'. Valid statuses are: todo, progress, done.")
+        return
+    
+    found = False
+    for task in tasks:
+        if task["id"] == task_id:
+            task["status"] = target_status
+            task["updatedAt"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            found = True
+            break
+
+    if found:
+        save_tasks(tasks)
+        print(f"Task #{task_id} marked as {target_status}.")
+    else:
+        print(f"Error: Task with ID {task_id} not found.")  
+    
 
 def delete_task(task_id: int):
     tasks = load_tasks()
@@ -101,6 +134,15 @@ def main(argv=None):
     delete_parser = subparsers.add_parser("delete", help="Delete a task by its index")
     delete_parser.add_argument("index", type=int, help="The index of the task to delete")
 
+    # Mark command
+    mark_parser = subparsers.add_parser("mark", help="Change task status by ID")
+    mark_parser.add_argument("index", type=int, help="The ID of the task to mark")
+
+    group = mark_parser.add_mutually_exclusive_group()
+    group.add_argument("-t", "--todo", action="store_true", help="Mark task as todo")
+    group.add_argument("-p", "--progress", action="store_true", help="Mark task as in-progress")
+    group.add_argument("-d", "--done", action="store_true", help="Mark task as done")
+
     args = parser.parse_args(argv)
     
     if args.command == "add":
@@ -111,4 +153,12 @@ def main(argv=None):
         update_task(args.index, args.message)
     elif args.command == "delete":
         delete_task(args.index)
+    elif args.command == "mark":
+        status = "todo"  # Default status
+        if args.progress: status = "progress"
+        if args.done: status = "done"
+        mark_task(args.index, status)
+    else:
+        parser.print_help()
+    return 0
     
