@@ -2,7 +2,7 @@ import argparse
 import json
 import os
 import dateparser
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_FILE = "tasks.json"
 
@@ -45,6 +45,33 @@ def format_due_date(due_at_str):
     else:
         if diff.days > 0:
             return f" (Due in {diff.days}d)"
+
+def calculate_urgency(task):
+    """Calculates a numeric score to rank tasks based on relative importance."""
+    score = 0
+    now = datetime.now()
+
+    if task.get("status") == "done":
+        return -1000
+    if task.get("status") == "in-progress":
+        score += 500
+    
+    if task.get("dueAt"):
+        due_date = datetime.strptime(task["dueAt"], "%Y-%m-%d %H:%M:%S")
+        time_diff = due_date - now
+
+        if time_diff.total_seconds() < 0:
+            score += 2000  # OVERDUE: Highest priority
+        elif time_diff < timedelta(hours=24):
+            score += 1000  # DUE SOON: High priority
+        elif time_diff < timedelta(days=3):
+            score += 500   # UPCOMING: Medium priority
+    
+    created_at = datetime.strptime(task["createdAt"], "%Y-%m-%d %H:%M:%S")
+    recency_bonus = (created_at - datetime(2025, 1, 1)).total_seconds() / 100000
+    score += recency_bonus
+
+    return score
         
 
 # Command implementations
@@ -75,19 +102,25 @@ def add_task(description: str, due_string: str = None):
     if due_at:
         print(f"    Due: {due_at}")
 
-def list_tasks(filter_status=None):
+def list_tasks(filter_status=None, smart=False):
     tasks = load_tasks()
 
     if filter_status:
         tasks = [t for t in tasks if t.get("status") == filter_status]
+
+    if smart:
+        tasks.sort(key=calculate_urgency, reverse=True)
+        header = "--- SMART RANKED TASKS (Urgency Logic Applied) ---"
+    else:
+        header = f"--- {filter_status.upper()} TASKS ---" if filter_status else "--- TASKS ---"
 
     if not tasks:
         msg = f"No tasks found with status '{filter_status}'." if filter_status else "Nothing to do right now. Relax and enjoy yourself!"
         print(msg)
         return
 
-    header = f"--- {filter_status.upper()} TASKS ---" if filter_status else "--- TASKS ---"
-    print(header)
+    
+    print(f"\n{header}")
 
     todo_count = 0
     in_progress_count = 0
@@ -96,10 +129,15 @@ def list_tasks(filter_status=None):
     total_tasks_count = 0
 
     for task in tasks:
-        due_date = datetime.strptime(task["dueAt"], "%Y-%m-%d %H:%M:%S")
-        if due_date < datetime.now():
-            overdue_count += 1
+        due_at_str = task.get("dueAt")
+        due_date = None
+        if due_at_str:
+            due_date = datetime.strptime(due_at_str, "%Y-%m-%d %H:%M:%S")
 
+        t_id = task.get("id", "?")
+        
+        if due_date and due_date < datetime.now():
+            overdue_count += 1
         if task["status"] == "todo":
             status = ""
             todo_count += 1
@@ -111,10 +149,18 @@ def list_tasks(filter_status=None):
             done_count += 1
         
         total_tasks_count += 1
+
+        label = ""
+        if smart and task.get("status") != "done":
+            due_at = task.get("dueAt")
+            if due_at and datetime.strptime(due_at, "%Y-%m-%d %H:%M:%S") < datetime.now():
+                label = "🔥 OVERDUE"
+            elif task.get("status") == "in-progress":
+                label = "⚡ ACTIVE"
             
         description = task.get("description", "N/A")
 
-        print(f"{task['id']}. [{status}] {description}{format_due_date(task.get('dueAt'))}")
+        print(f"{t_id}. [{label if label else status}] {description}{format_due_date(task.get('dueAt'))}")
     
     if overdue_count == total_tasks_count:
         print("\nYour task is overdue. Better get to work!")
@@ -212,6 +258,7 @@ def main(argv=None):
 
     # List command
     list_parser = subparsers.add_parser("list", help="List tasks")
+    list_parser.add_argument("-s", "--smart", action="store_true", help="Rank tasks by urgency")
 
     group = list_parser.add_mutually_exclusive_group()
     group.add_argument("-d", "--done", action="store_true", help="Show only completed tasks")
@@ -243,13 +290,10 @@ def main(argv=None):
         add_task(args.text, args.due)
     elif args.command == "list":
         filter_status = None
-        if args.done:
-            filter_status = "done"
-        elif args.progress:
-            filter_status = "in-progress"
-        elif args.todo:
-            filter_status = "todo"
-        list_tasks(filter_status)
+        if args.done: filter_status = "done"
+        elif args.progress: filter_status = "in-progress"
+        elif args.todo: filter_status = "todo"
+        list_tasks(filter_status, args.smart)
     elif args.command == "update":
         update_task(args.index, args.message)
     elif args.command == "delete":
