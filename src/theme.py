@@ -17,8 +17,8 @@ CLR_CYAN  = "\033[36m"
 
 # Icons & Status Labels
 STATUS_THEME = {
-    "todo":        {"icon": "☐", "label": "TODO",     "color": CLR_RESET},
-    "in-progress": {"icon": "◐", "label": "ACTIVE",   "color": CLR_CYAN},
+    "todo":        {"icon": "☐", "label": "",     "color": CLR_RESET},
+    "in-progress": {"icon": "◐", "label": "",   "color": CLR_CYAN},
     "done":        {"icon": "✓", "label": "",     "color": CLR_DIM + CLR_GREEN},
 }
 
@@ -91,77 +91,75 @@ def human_time(date_str):
 
 def list_tasks(filter_status=None, smart=False):
     tasks = load_tasks()
-    raw_width = shutil.get_terminal_size((80, 20)).columns
-    term_width = min(raw_width, 100)
-
     if filter_status:
         tasks = [t for t in tasks if t.get("status") == filter_status]
-    if smart: tasks.sort(key=calculate_urgency, reverse=True)
-
-    # --- HEADER ---
-    title = f"AGAPE - {'SMART' if smart else 'ALL'} TASKS"
-    print(f"\n{CLR_BOLD}{title}{CLR_RESET}")
-    print(f"{CLR_DIM}{len(tasks)} tasks total{CLR_RESET}\n")
-
-    # Column Headers
-    header = f"{'ID':<4} {'STATUS':<12} {'TASK'}"
-    print(f"{CLR_DIM}{header}{CLR_RESET}")
-    print(f"{CLR_DIM}{'─' * term_width}{CLR_RESET}")
+    if smart: 
+        tasks.sort(key=calculate_urgency, reverse=True)
 
     if not tasks:
-        print(f"{CLR_DIM}Nothing to show. Relax and enjoy.{CLR_RESET}")
+        print(f"\n{CLR_DIM}Nothing to show. Relax and enjoy.{CLR_RESET}\n")
         return
+
+    formatted_rows = []
+    max_line_width = 0
     
-    # --- TASK ROWS ---
     active_count = 0
     overdue_count = 0
     done_count = 0
-    total_count = 0
 
     for t in tasks:
         status = t.get("status", "todo")
         style = STATUS_THEME.get(status)
 
-        if status == "in-progress":
-            active_count += 1
-        elif status == "done":
-            done_count += 1
+        if status == "in-progress": active_count += 1
+        elif status == "done": done_count += 1
         
         due_label = format_due_date(t.get("dueAt"))
         if status != "done" and "Overdue" in due_label:
             overdue_count += 1
-        
+
+        # ID (3 chars) | Status (2 chars) | Task | Time
         time_str = human_time(t.get('createdAt'))
-        time_info = f"{CLR_DIM} · {time_str}{CLR_RESET}"
-
-        # Column 1 & 2: ID and Status
-        id_str = f"{t['id']:<4}"
-        status_str = f"{style['color']}{style['icon']} {style['label']:<9}{CLR_RESET}"
+        id_str = f"{t['id']:<3}"
+        status_str = f"{style['color']}{style['icon']}{CLR_RESET}  "
         
-        # Column 3: Description (Dynamic Width)
-        meta_padding = 15
-        available_width = term_width - 25 - meta_padding
-        desc = textwrap.shorten(t['description'], width=available_width, placeholder="…")
+        desc = t['description']
         
-        # Final Assemble
-        row = f"{id_str} {status_str} {desc}{time_info}"
-        print(row)
+        raw_line = f"{id_str} {style['icon']}  {desc}  · {time_str}"
+        max_line_width = max(max_line_width, len(raw_line))
+        
+        formatted_rows.append({
+            "id": id_str,
+            "status": status_str,
+            "desc": desc,
+            "time": time_str
+        })
 
-        total_count += 1
+    # 2. Define the Rule Width (Capped for sanity, but fits content)
+    rule_width = max(max_line_width, 40) 
+
+    # --- HEADER ---
+    title = f"AGAPE - {'SMART' if smart else 'ALL'}"
+    print(f"\n{CLR_BOLD}{title}{CLR_RESET}")
+    print(f"{CLR_DIM}{len(tasks)} tasks{CLR_RESET}\n")
+
+    # Column Headers (S represents Status)
+    print(f"{CLR_DIM}{'ID':<4}{'S':<4}{'TASK'}{CLR_RESET}")
+    print(f"{CLR_DIM}{'─' * rule_width}{CLR_RESET}")
+
+    # --- TASK ROWS ---
+    for row in formatted_rows:
+        meta = f" · {row['time']}"
+
+        print(f"{row['id']} {row['status']} {row['desc']} {CLR_DIM}{meta}{CLR_RESET}")
 
     # --- FOOTER ---
-    print(f"{CLR_DIM}{'─' * term_width}{CLR_RESET}")
+    print(f"{CLR_DIM}{'─' * rule_width}{CLR_RESET}")
     
     footer_parts = [f"{len(tasks)} total"]
-    if done_count == total_count:
-        footer_parts.append(f"{CLR_GREEN}all complete{CLR_RESET}")
-    else:
-        if done_count > 0:
-            footer_parts.append(f"{CLR_GREEN}{done_count} done{CLR_RESET}")
-        if active_count > 0:
-            footer_parts.append(f"{CLR_CYAN}{active_count} active{CLR_RESET}")
-        if overdue_count > 0:
-            footer_parts.append(f"{CLR_RED}{overdue_count} overdue{CLR_RESET}")
+    if done_count > 0: footer_parts.append(f"{CLR_GREEN}{done_count} done{CLR_RESET}")
+    if active_count > 0: footer_parts.append(f"{CLR_CYAN}{active_count} active{CLR_RESET}")
+    if overdue_count > 0: footer_parts.append(f"{CLR_RED}{overdue_count} overdue{CLR_RESET}")
 
-    footer_text = f" {CLR_DIM} · {CLR_RESET}".join(footer_parts)
+    footer_text = f" {CLR_DIM}·{CLR_RESET} ".join(footer_parts)
     print(f"{CLR_DIM}{footer_text}{CLR_RESET}\n")
