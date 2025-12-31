@@ -89,22 +89,49 @@ def list_tasks(filter_status=None):
     header = f"--- {filter_status.upper()} TASKS ---" if filter_status else "--- TASKS ---"
     print(header)
 
+    todo_count = 0
+    in_progress_count = 0
+    done_count = 0
+    overdue_count = 0
+    total_tasks_count = 0
+
     for task in tasks:
+        due_date = datetime.strptime(task["dueAt"], "%Y-%m-%d %H:%M:%S")
+        if due_date < datetime.now():
+            overdue_count += 1
+
         if task["status"] == "todo":
             status = ""
+            todo_count += 1
         elif task["status"] == "in-progress":
             status = "○"
+            in_progress_count += 1
         elif task["status"] == "done":
             status = "✓"
+            done_count += 1
+        
+        total_tasks_count += 1
+            
         description = task.get("description", "N/A")
 
         print(f"{task['id']}. [{status}] {description}{format_due_date(task.get('dueAt'))}")
+    
+    if overdue_count == total_tasks_count:
+        print("\nYour task is overdue. Better get to work!")
+    elif overdue_count > 2:
+        print("\nSeveral tasks are overude. We should prioritize.")
+    elif todo_count == total_tasks_count:
+        print("\nPlenty of things to do. Let's get started with something!")
+    elif in_progress_count > 1:
+        print("\nMultiple tasks in progress. Don't spread yourself thin!")
+    elif done_count == total_tasks_count:
+        print("\nLook at your efficiency! Well done!")
 
 def update_task(index: int, message: str):
     tasks = load_tasks()
     try:
         tasks[index - 1]["description"] = message
-        tasks[index - 1]["updatedAt"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        tasks[index - 1]["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         save_tasks(tasks)
         print(f"Task #{index} updated to: {message}")
     except IndexError:
@@ -127,7 +154,7 @@ def mark_task(task_id: int, new_status: str):
     for task in tasks:
         if task["id"] == task_id:
             task["status"] = target_status
-            task["updatedAt"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            task["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             found = True
             break
 
