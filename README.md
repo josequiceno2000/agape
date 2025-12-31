@@ -208,3 +208,4 @@ Built with care and respect for the command line.
 
 If you appreciate tools that value clarity over cleverness, AGAPE is for you.
 
+Thanks to [roadmap.sh](https://roadmap.sh/projects/task-tracker) for the inspiration!
