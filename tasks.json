@@ -30,5 +30,21 @@
         "createdAt": "2025-12-30 20:56:57",
         "dueAt": "2025-12-31 20:00:00",
         "updatedAt": "2025-12-30 21:02:29"
+    },
+    {
+        "id": 5,
+        "description": "Make README",
+        "status": "in-progress",
+        "createdAt": "2025-12-30 22:15:01",
+        "dueAt": "2026-01-06 22:15:01",
+        "updatedAt": "2025-12-30 22:17:06"
+    },
+    {
+        "id": 6,
+        "description": "Clean room",
+        "status": "todo",
+        "createdAt": "2025-12-30 22:16:46",
+        "dueAt": "2025-12-31 01:16:46",
+        "updatedAt": null
     }
 ]
