@@ -2,11 +2,17 @@ import argparse
 import json
 import os
 import dateparser
+import shutil
 from datetime import datetime, timedelta
 
 DB_FILE = "tasks.json"
+BACKUP_FILE = "tasks.json.bak"
 
 # Auxiliary functions to load and save tasks
+def create_backup():
+    """Copies current tasks file to a backup before any changes."""
+    if os.path.exists(DB_FILE):
+        shutil.copy(DB_FILE, BACKUP_FILE)
 
 def load_tasks():
     if os.path.exists(DB_FILE):
