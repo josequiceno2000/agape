@@ -15,12 +15,14 @@ def create_backup():
         shutil.copy(DB_FILE, BACKUP_FILE)
 
 def load_tasks():
+    """Loads all tasks from tasks.json file"""
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as file:
             return json.load(file)
     return []
 
 def save_tasks(tasks):
+    """Saves tasks to json file"""
     with open(DB_FILE, "w") as file:
         json.dump(tasks, file, indent=4)
 
