@@ -1,7 +1,8 @@
 import argparse
 import json
 import os
-import datetime
+import dateparser
+from datetime import datetime
 
 DB_FILE = "tasks.json"
 
@@ -23,23 +24,56 @@ def reindex_tasks(tasks):
         task["id"] = index
     return tasks
 
+def format_due_date(due_at_str):
+    if not due_at_str:
+        return ""
+
+    due_at = datetime.strptime(due_at_str, "%Y-%m-%d %H:%M:%S")
+    now = datetime.now()
+    diff = due_at - now
+
+    if diff.total_seconds() < 0:
+        days = abs(diff.days)
+        return f" (Overdue by {days}d)" if days > 0 else " (Overdue)"
+    elif diff.total_seconds() < 60:
+        return f" (Due in the next minute!)"
+    elif diff.total_seconds() < 3600:
+        return f" (Due in the next hour!)"
+    elif diff.total_seconds() < 86400:
+        hours = diff.seconds // 3600
+        return f" (Due in the next {hours}h)"
+    else:
+        if diff.days > 0:
+            return f" (Due in {diff.days}d)"
+        
+
 # Command implementations
 
-def add_task(description: str):
+def add_task(description: str, due_string: str = None):
     tasks = load_tasks()
+    now = datetime.now()
 
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    due_at = None
+    if due_string:
+        parsed_date = dateparser.parse(due_string, settings={'PREFER_DATES_FROM': 'future'})
+        if parsed_date:
+            due_at = parsed_date.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            print(f"Could not parse date: '{due_string}. Adding without due date.")
     
     tasks.append({
         "id": len(tasks) + 1,
         "description": description, 
         "status": "todo",
-        "createdAt": timestamp,
+        "createdAt": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "dueAt": due_at,
         "updatedAt": None,
     })
 
     save_tasks(tasks)
-    print(f"Task added: {description} (at {timestamp})")
+    print(f"Task added: {description} (at {now})")
+    if due_at:
+        print(f"    Due: {due_at}")
 
 def list_tasks(filter_status=None):
     tasks = load_tasks()
@@ -64,7 +98,7 @@ def list_tasks(filter_status=None):
             status = "✓"
         description = task.get("description", "N/A")
 
-        print(f"{task['id']}. [{status}] {description}")
+        print(f"{task['id']}. [{status}] {description}{format_due_date(task.get('dueAt'))}")
 
 def update_task(index: int, message: str):
     tasks = load_tasks()
@@ -129,6 +163,7 @@ def main(argv=None):
     # Add command
     add_parser = subparsers.add_parser("add", help="Add a new task")
     add_parser.add_argument("text", type=str, help="The text of the task to add")
+    add_parser.add_argument("-due", "--due", type=str, help="Natural language due date (e.g. 'tomorrow at 5pm')")
 
     # List command
     list_parser = subparsers.add_parser("list", help="List tasks")
@@ -159,7 +194,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     
     if args.command == "add":
-        add_task(args.text)
+        add_task(args.text, args.due)
     elif args.command == "list":
         filter_status = None
         if args.done:
