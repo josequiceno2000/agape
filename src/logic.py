@@ -82,7 +82,7 @@ def list_tasks(filter_status=None):
         tasks = [t for t in tasks if t.get("status") == filter_status]
 
     if not tasks:
-        msg = f"No tasks found with status '{filter_status}'." if filter_status else "Your list is empty."
+        msg = f"No tasks found with status '{filter_status}'." if filter_status else "Nothing to do right now. Relax and enjoy yourself!"
         print(msg)
         return
 
@@ -138,22 +138,36 @@ def mark_task(task_id: int, new_status: str):
         print(f"Error: Task with ID {task_id} not found.")  
     
 
-def delete_task(task_id: int):
+def delete_task(task_id: int = None, all_tasks: bool = False):
+    # Handle Delete All Case
+    if all_tasks:
+        confirm = input("Are you sure you want to delete ALL tasks? (y/N)\n> ").lower()
+        if confirm == 'y':
+            save_tasks([])
+            print("All tasks have been deleted.")
+        else:
+            print("Operation cancelled.")
+        return
+    
+    # Safety Check
+    if task_id is None:
+        print("Error: Please provide a task ID (e.g., agape delete 1) or use --all")
+        return
+
     tasks = load_tasks()
 
-    task_text = tasks[task_id - 1]["description"] if 0 < task_id <= len(tasks) else None
-    if task_text is None:
+    if not (0 < task_id <= len(tasks)):
         print(f"Error: Task with ID {task_id} not found.")
         return
+
+    task_text = tasks[task_id - 1]["description"] 
+    
 
     new_tasks = [t for t in tasks if t.get("id") != task_id]
 
-    if len(tasks) == len(new_tasks):
-        print(f"Error: Task with ID {task_id} not found.")
-        return
-
     reindexed_tasks = reindex_tasks(new_tasks)
     save_tasks(reindexed_tasks)
+
     print(f"Task deleted: {task_text}")
     
 def main(argv=None):
@@ -183,8 +197,9 @@ def main(argv=None):
     update_parser.add_argument("message", type=str, help="The new text for the task")
 
     # Delete command
-    delete_parser = subparsers.add_parser("delete", help="Delete a task by its index")
-    delete_parser.add_argument("index", type=int, help="The index of the task to delete")
+    delete_parser = subparsers.add_parser("delete", help="Delete tasks")
+    delete_parser.add_argument("index", type=int, nargs='?', help="The index of the task to delete")
+    delete_parser.add_argument("-a", "--all", action="store_true", help="Delete all tasks")
 
     # Mark command
     mark_parser = subparsers.add_parser("mark", help="Change task status by ID")
@@ -211,7 +226,7 @@ def main(argv=None):
     elif args.command == "update":
         update_task(args.index, args.message)
     elif args.command == "delete":
-        delete_task(args.index)
+        delete_task(args.index, args.all)
     elif args.command == "mark":
         status = "todo"  # Default status
         if args.progress: status = "progress"
