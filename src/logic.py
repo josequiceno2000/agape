@@ -4,6 +4,7 @@ import os
 import dateparser
 import shutil
 from datetime import datetime, timedelta
+from theme import list_tasks, load_tasks, format_due_date
 
 DB_FILE = "tasks.json"
 BACKUP_FILE = "tasks.json.bak"
@@ -34,13 +35,6 @@ def undo_action():
     except Exception as e:
         print(f"Undo failed: {e}")
 
-def load_tasks():
-    """Loads all tasks from tasks.json file"""
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r") as file:
-            return json.load(file)
-    return []
-
 def save_tasks(tasks):
     """Saves tasks to json file"""
     with open(DB_FILE, "w") as file:
@@ -51,55 +45,6 @@ def reindex_tasks(tasks):
     for index, task in enumerate(tasks, start=1):
         task["id"] = index
     return tasks
-
-def format_due_date(due_at_str):
-    if not due_at_str:
-        return ""
-
-    due_at = datetime.strptime(due_at_str, "%Y-%m-%d %H:%M:%S")
-    now = datetime.now()
-    diff = due_at - now
-
-    if diff.total_seconds() < 0:
-        days = abs(diff.days)
-        return f" (Overdue by {days}d)" if days > 0 else " (Overdue)"
-    elif diff.total_seconds() < 60:
-        return f" (Due in the next minute!)"
-    elif diff.total_seconds() < 3600:
-        return f" (Due in the next hour!)"
-    elif diff.total_seconds() < 86400:
-        hours = diff.seconds // 3600
-        return f" (Due in the next {hours}h)"
-    else:
-        if diff.days > 0:
-            return f" (Due in {diff.days}d)"
-
-def calculate_urgency(task):
-    """Calculates a numeric score to rank tasks based on relative importance."""
-    score = 0
-    now = datetime.now()
-
-    if task.get("status") == "done":
-        return -1000
-    if task.get("status") == "in-progress":
-        score += 500
-    
-    if task.get("dueAt"):
-        due_date = datetime.strptime(task["dueAt"], "%Y-%m-%d %H:%M:%S")
-        time_diff = due_date - now
-
-        if time_diff.total_seconds() < 0:
-            score += 2000  # OVERDUE: Highest priority
-        elif time_diff < timedelta(hours=24):
-            score += 1000  # DUE SOON: High priority
-        elif time_diff < timedelta(days=3):
-            score += 500   # UPCOMING: Medium priority
-    
-    created_at = datetime.strptime(task["createdAt"], "%Y-%m-%d %H:%M:%S")
-    recency_bonus = (created_at - datetime(2025, 1, 1)).total_seconds() / 100000
-    score += recency_bonus
-
-    return score
         
 
 # Command implementations
@@ -131,75 +76,6 @@ def add_task(description: str, due_string: str = None):
     if due_at:
         print(f"    Due: {due_at}")
 
-def list_tasks(filter_status=None, smart=False):
-    tasks = load_tasks()
-
-    if filter_status:
-        tasks = [t for t in tasks if t.get("status") == filter_status]
-
-    if smart:
-        tasks.sort(key=calculate_urgency, reverse=True)
-        header = "--- SMART RANKED TASKS (Urgency Logic Applied) ---"
-    else:
-        header = f"--- {filter_status.upper()} TASKS ---" if filter_status else "--- TASKS ---"
-
-    if not tasks:
-        msg = f"No tasks found with status '{filter_status}'." if filter_status else "Nothing to do right now. Relax and enjoy yourself!"
-        print(msg)
-        return
-
-    print(f"\n{header}")
-
-    todo_count = 0
-    in_progress_count = 0
-    done_count = 0
-    overdue_count = 0
-    total_tasks_count = 0
-
-    for task in tasks:
-        due_at_str = task.get("dueAt")
-        due_date = None
-        if due_at_str:
-            due_date = datetime.strptime(due_at_str, "%Y-%m-%d %H:%M:%S")
-
-        t_id = task.get("id", "?")
-        
-        if due_date and due_date < datetime.now():
-            overdue_count += 1
-        if task["status"] == "todo":
-            status = ""
-            todo_count += 1
-        elif task["status"] == "in-progress":
-            status = "○"
-            in_progress_count += 1
-        elif task["status"] == "done":
-            status = "✓"
-            done_count += 1
-        
-        total_tasks_count += 1
-
-        label = ""
-        if smart and task.get("status") != "done":
-            due_at = task.get("dueAt")
-            if due_at and datetime.strptime(due_at, "%Y-%m-%d %H:%M:%S") < datetime.now():
-                label = "🔥 OVERDUE"
-            elif task.get("status") == "in-progress":
-                label = "⚡ ACTIVE"
-            
-        description = task.get("description", "N/A")
-
-        print(f"{t_id}. [{label if label else status}] {description}{format_due_date(task.get('dueAt'))}")
-    
-    if overdue_count == total_tasks_count:
-        print("\nYour task is overdue. Better get to work!")
-    elif overdue_count > 2:
-        print("\nSeveral tasks are overude. We should prioritize.")
-    elif todo_count == total_tasks_count:
-        print("\nPlenty of things to do. Let's get started with something!")
-    elif in_progress_count > 1:
-        print("\nMultiple tasks in progress. Don't spread yourself thin!")
-    elif done_count == total_tasks_count:
-        print("\nLook at your efficiency! Well done!")
 
 def update_task(index: int, message: str):
     create_backup()

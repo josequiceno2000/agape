@@ -2,25 +2,33 @@
     {
         "id": 1,
         "description": "Eat breaky",
-        "status": "todo",
+        "status": "done",
         "createdAt": "2025-12-30 18:56:48",
         "dueAt": "2025-12-29 18:56:48",
-        "updatedAt": "2025-12-30 19:03:33"
+        "updatedAt": "2025-12-30 20:57:30"
     },
     {
         "id": 2,
         "description": "Work out",
-        "status": "in-progress",
+        "status": "done",
         "createdAt": "2025-12-30 20:08:06",
         "dueAt": "2025-12-31 09:00:00",
-        "updatedAt": "2025-12-30 20:08:23"
+        "updatedAt": "2025-12-30 21:02:22"
     },
     {
         "id": 3,
         "description": "Eat Chipotle",
-        "status": "todo",
+        "status": "done",
         "createdAt": "2025-12-30 20:22:47",
         "dueAt": "2025-12-31 20:22:47",
-        "updatedAt": null
+        "updatedAt": "2025-12-30 21:02:26"
+    },
+    {
+        "id": 4,
+        "description": "Talk to Carly",
+        "status": "done",
+        "createdAt": "2025-12-30 20:56:57",
+        "dueAt": "2025-12-31 20:00:00",
+        "updatedAt": "2025-12-30 21:02:29"
     }
 ]
