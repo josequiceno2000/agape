@@ -117,13 +117,16 @@ def list_tasks(filter_status=None, smart=False):
 
     for t in tasks:
         status = t.get("status", "todo")
-        if status == "in-progress": active_count += 1
-        if status == "done": done_count += 1
         style = STATUS_THEME.get(status)
 
-        if status == "in-progress": active_count += 1
+        if status == "in-progress":
+            active_count += 1
+        elif status == "done":
+            done_count += 1
+        
         due_label = format_due_date(t.get("dueAt"))
-        if "Overdue" in due_label: overdue_count += 1
+        if status != "done" and "Overdue" in due_label:
+            overdue_count += 1
         
         time_info = f"{CLR_DIM}{human_time(t.get('createdAt'))}{CLR_RESET}"
 
