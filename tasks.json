@@ -22,5 +22,13 @@
         "createdAt": "2025-12-30 18:31:20",
         "dueAt": "2025-12-30 21:31:20",
         "updatedAt": null
+    },
+    {
+        "id": 4,
+        "description": "Milk cow",
+        "status": "todo",
+        "createdAt": "2025-12-30 18:35:35",
+        "dueAt": "2025-12-27 18:35:35",
+        "updatedAt": null
     }
 ]

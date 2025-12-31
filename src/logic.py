@@ -163,7 +163,11 @@ def main(argv=None):
     # Add command
     add_parser = subparsers.add_parser("add", help="Add a new task")
     add_parser.add_argument("text", type=str, help="The text of the task to add")
-    add_parser.add_argument("-due", "--due", type=str, help="Natural language due date (e.g. 'tomorrow at 5pm')")
+    add_parser.add_argument(
+        "-d", "--due", 
+        type=str,
+        metavar="<date>", 
+        help="Natural language due date (e.g. 'tomorrow at 5pm')")
 
     # List command
     list_parser = subparsers.add_parser("list", help="List tasks")
