@@ -14,6 +14,26 @@ def create_backup():
     if os.path.exists(DB_FILE):
         shutil.copy(DB_FILE, BACKUP_FILE)
 
+def undo_action():
+    if not os.path.exists(BACKUP_FILE):
+        print("No undo history available.")
+        return
+    
+    temp_file = "tasks_temp.json"
+
+    try:
+        if os.path.exists(DB_FILE):
+            shutil.move(DB_FILE, temp_file)
+        
+        shutil.move(BACKUP_FILE, DB_FILE)
+
+        if os.path.exists(temp_file):
+            shutil.move(temp_file, BACKUP_FILE)
+        
+        print("Undo successful.")
+    except Exception as e:
+        print(f"Undo failed: {e}")
+
 def load_tasks():
     """Loads all tasks from tasks.json file"""
     if os.path.exists(DB_FILE):
@@ -85,6 +105,7 @@ def calculate_urgency(task):
 # Command implementations
 
 def add_task(description: str, due_string: str = None):
+    create_backup()
     tasks = load_tasks()
     now = datetime.now()
 
@@ -127,7 +148,6 @@ def list_tasks(filter_status=None, smart=False):
         print(msg)
         return
 
-    
     print(f"\n{header}")
 
     todo_count = 0
@@ -182,6 +202,7 @@ def list_tasks(filter_status=None, smart=False):
         print("\nLook at your efficiency! Well done!")
 
 def update_task(index: int, message: str):
+    create_backup()
     tasks = load_tasks()
     try:
         tasks[index - 1]["description"] = message
@@ -192,6 +213,7 @@ def update_task(index: int, message: str):
         print(f"Error: Task #{index} does not exist.")
 
 def mark_task(task_id: int, new_status: str):
+    create_backup()
     tasks = load_tasks()
     status_map = {
         "todo": "todo",
@@ -220,6 +242,8 @@ def mark_task(task_id: int, new_status: str):
     
 
 def delete_task(task_id: int = None, all_tasks: bool = False):
+    create_backup()
+
     # Handle Delete All Case
     if all_tasks:
         confirm = input("Are you sure you want to delete ALL tasks? (y/N)\n> ").lower()
@@ -292,7 +316,12 @@ def main(argv=None):
     group.add_argument("-p", "--progress", action="store_true", help="Mark task as in-progress")
     group.add_argument("-d", "--done", action="store_true", help="Mark task as done")
 
+    # Undo command
+    undo_parser = subparsers.add_parser("undo", help="Revert the last destructive action")
+
     args = parser.parse_args(argv)
+
+    
     
     if args.command == "add":
         add_task(args.text, args.due)
@@ -311,6 +340,8 @@ def main(argv=None):
         if args.progress: status = "progress"
         if args.done: status = "done"
         mark_task(args.index, status)
+    elif args.command == "undo":
+        undo_action()
     else:
         parser.print_help()
     return 0
